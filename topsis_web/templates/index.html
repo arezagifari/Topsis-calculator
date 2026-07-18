@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="id" data-bs-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TOPSIS — Kelompok 3</title>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+<style>
+  body{ padding-bottom: 60px; }
+  .block-heading{
+    color: #5ec8a6; font-size: 1.05rem; margin: 24px 0 12px;
+    border-left: 4px solid #5ec8a6; padding-left: 12px; font-weight: 600;
+  }
+  .block-text{
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    font-size: 0.82rem; color: #adb5bd; line-height: 1.7; margin: 3px 0;
+    word-break: break-word;
+  }
+  #hasil table{ font-size: 0.88rem; }
+  .ranking-item.top{ border: 1px solid #5ec8a6 !important; }
+  .table-input{ min-width: 90px; }
+  .matrix-scroll{ overflow-x: auto; }
+</style>
+</head>
+<body>
+<div class="container py-4" style="max-width: 1100px;">
+
+  <h1 class="h3 mb-1"><i class="fa-solid fa-diagram-project text-success me-2"></i>TOPSIS — Kelompok 3</h1>
+  <p class="text-secondary mb-4">
+    Input bebas jumlah alternatif &amp; kriteria, nama boleh diisi sendiri. Hasil menampilkan seluruh proses
+    perhitungan (Tabel Awal → Matrik R → Matrik Y → Solusi Ideal → Jarak → Nilai Preferensi).
+  </p>
+
+  <div class="card mb-3">
+    <div class="card-body">
+      <h6 class="card-subtitle text-secondary mb-2">Anggota Kelompok</h6>
+      <div class="row row-cols-1 row-cols-md-2 g-1 small text-secondary">
+        <div class="col">Muhammad Irfan A — 8020240063</div>
+        <div class="col">Afdillah Reza Gifari — 8020240233</div>
+        <div class="col">Sal Sabila Aulia.M — 8020240262</div>
+        <div class="col">Nur Aini Pulungan — 8020240160</div>
+        <div class="col">Rizal Aji Pangestu — 8020240049</div>
+        <div class="col">Baso Nadzi</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card mb-3">
+    <div class="card-header fw-semibold text-warning-emphasis">1. Ukuran Data</div>
+    <div class="card-body">
+      <div class="row g-3 align-items-end">
+        <div class="col-auto">
+          <label for="jumlahAlt" class="form-label small text-secondary">Banyak alternatif</label>
+          <input type="number" class="form-control" id="jumlahAlt" min="2" value="3">
+        </div>
+        <div class="col-auto">
+          <label for="jumlahKrit" class="form-label small text-secondary">Banyak kriteria</label>
+          <input type="number" class="form-control" id="jumlahKrit" min="2" value="5">
+        </div>
+        <div class="col-auto">
+          <button class="btn btn-outline-light" onclick="buatForm()">
+            <i class="fa-solid fa-arrows-rotate me-1"></i>Buat / Perbarui Form
+          </button>
+        </div>
+      </div>
+      <div class="form-text mt-2">Ubah angka lalu klik "Buat / Perbarui Form" untuk menyesuaikan form di bawah.</div>
+    </div>
+  </div>
+
+  <div class="card mb-3">
+    <div class="card-header fw-semibold text-warning-emphasis">2. Nama Alternatif</div>
+    <div class="card-body">
+      <div id="areaAlternatif" class="row g-3"></div>
+    </div>
+  </div>
+
+  <div class="card mb-3">
+    <div class="card-header fw-semibold text-warning-emphasis">3. Kriteria: Nama, Tipe (keuntungan/biaya) &amp; Bobot</div>
+    <div class="card-body">
+      <div class="table-responsive" id="areaKriteria"></div>
+    </div>
+  </div>
+
+  <div class="card mb-3">
+    <div class="card-header fw-semibold text-warning-emphasis">4. Matriks Nilai Alternatif</div>
+    <div class="card-body matrix-scroll">
+      <table class="table table-bordered table-dark align-middle text-center" id="tabelMatrik"></table>
+    </div>
+  </div>
+
+  <div class="d-flex gap-2 mb-3">
+    <button class="btn btn-success fw-semibold px-4" onclick="hitung()">
+      <i class="fa-solid fa-calculator me-1"></i>Hitung TOPSIS
+    </button>
+  </div>
+  <div id="errorBox" class="alert alert-danger d-none" role="alert"></div>
+
+  <div id="hasil"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+<script>
+function buatForm(){
+  const alt = parseInt(document.getElementById('jumlahAlt').value) || 3;
+  const krit = parseInt(document.getElementById('jumlahKrit').value) || 5;
+
+  // form nama alternatif
+  let htmlAlt = '';
+  for(let i=0;i<alt;i++){
+    htmlAlt += `<div class="col-auto">
+      <label for="nama_alt_${i}" class="form-label small text-secondary">Alternatif ke-${i+1}</label>
+      <input type="text" class="form-control" id="nama_alt_${i}" value="A${i+1}">
+    </div>`;
+  }
+  document.getElementById('areaAlternatif').innerHTML = htmlAlt;
+
+  // form kriteria: nama, tipe, bobot
+  let htmlKrit = `<table class="table table-dark table-bordered align-middle text-center">
+    <thead><tr><th>Kriteria</th><th>Nama</th><th>Tipe</th><th>Bobot</th></tr></thead><tbody>`;
+  for(let j=0;j<krit;j++){
+    htmlKrit += `<tr>
+      <td>C${j+1}</td>
+      <td><input type="text" class="form-control form-control-sm table-input mx-auto" id="nama_krit_${j}" value="C${j+1}"></td>
+      <td>
+        <select class="form-select form-select-sm table-input mx-auto" id="tipe_krit_${j}">
+          <option value="keuntungan">keuntungan</option>
+          <option value="biaya">biaya</option>
+        </select>
+      </td>
+      <td><input type="number" step="any" class="form-control form-control-sm table-input mx-auto" id="bobot_${j}" value="1"></td>
+    </tr>`;
+  }
+  htmlKrit += '</tbody></table>';
+  document.getElementById('areaKriteria').innerHTML = htmlKrit;
+
+  // tabel matriks nilai
+  buatTabelMatrik();
+}
+
+function buatTabelMatrik(){
+  const alt = parseInt(document.getElementById('jumlahAlt').value) || 3;
+  const krit = parseInt(document.getElementById('jumlahKrit').value) || 5;
+
+  let html = '<thead><tr><th>Alternatif</th>';
+  for(let j=0;j<krit;j++){
+    const namaEl = document.getElementById(`nama_krit_${j}`);
+    const nama = namaEl ? namaEl.value : `C${j+1}`;
+    html += `<th>${nama}</th>`;
+  }
+  html += '</tr></thead><tbody>';
+
+  for(let i=0;i<alt;i++){
+    const namaAltEl = document.getElementById(`nama_alt_${i}`);
+    const namaAlt = namaAltEl ? namaAltEl.value : `A${i+1}`;
+    html += `<tr><td>${namaAlt}</td>`;
+    for(let j=0;j<krit;j++){
+      html += `<td><input type="number" step="any" class="form-control form-control-sm table-input mx-auto" id="x_${i}_${j}" value="1"></td>`;
+    }
+    html += '</tr>';
+  }
+  html += '</tbody>';
+  document.getElementById('tabelMatrik').innerHTML = html;
+}
+
+function tampilkanError(pesan){
+  const errorBox = document.getElementById('errorBox');
+  if(!pesan){
+    errorBox.classList.add('d-none');
+    errorBox.textContent = '';
+    return;
+  }
+  errorBox.classList.remove('d-none');
+  errorBox.textContent = pesan;
+}
+
+async function hitung(){
+  const hasilDiv = document.getElementById('hasil');
+  tampilkanError('');
+  hasilDiv.innerHTML = '';
+
+  const alt = parseInt(document.getElementById('jumlahAlt').value);
+  const krit = parseInt(document.getElementById('jumlahKrit').value);
+
+  const alternatif = [];
+  for(let i=0;i<alt;i++){
+    alternatif.push(document.getElementById(`nama_alt_${i}`).value || `A${i+1}`);
+  }
+
+  const kriteria = [];
+  const tipe = [];
+  const bobot = [];
+  for(let j=0;j<krit;j++){
+    kriteria.push(document.getElementById(`nama_krit_${j}`).value || `C${j+1}`);
+    tipe.push(document.getElementById(`tipe_krit_${j}`).value);
+    bobot.push(parseFloat(document.getElementById(`bobot_${j}`).value));
+  }
+
+  const matrik = [];
+  for(let i=0;i<alt;i++){
+    const baris = [];
+    for(let j=0;j<krit;j++){
+      const el = document.getElementById(`x_${i}_${j}`);
+      baris.push(parseFloat(el.value));
+    }
+    matrik.push(baris);
+  }
+
+  try{
+    const res = await fetch('/api/topsis', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({alternatif, kriteria, tipe, bobot, matrik})
+    });
+    const data = await res.json();
+    if(!res.ok){
+      tampilkanError(data.error || 'Terjadi kesalahan.');
+      return;
+    }
+    renderHasil(data.blocks, data.ringkasan);
+  }catch(err){
+    tampilkanError('Gagal menghubungi server: ' + err.message);
+  }
+}
+
+function renderHasil(blocks, ringkasan){
+  const hasilDiv = document.getElementById('hasil');
+  let html = '';
+
+  blocks.forEach(b=>{
+    if(b.type === 'heading'){
+      html += `<div class="block-heading">${b.content}</div>`;
+    } else if(b.type === 'text'){
+      html += `<div class="block-text">${b.content}</div>`;
+    } else if(b.type === 'table'){
+      html += `<div class="fw-semibold mt-3 mb-1">${b.title}</div>`;
+      html += '<div class="table-responsive"><table class="table table-dark table-bordered align-middle text-center"><thead><tr><th></th>';
+      b.header.forEach(h=> html += `<th>${h}</th>`);
+      html += '</tr></thead><tbody>';
+      b.rows.forEach(r=>{
+        html += `<tr><td class="fw-semibold">${r.label}</td>`;
+        r.values.forEach(v=> html += `<td>${v}</td>`);
+        html += '</tr>';
+      });
+      html += '</tbody></table></div>';
+    }
+  });
+
+  html += '<div class="block-heading">Ringkasan &amp; Ranking</div>';
+  html += '<div class="table-responsive"><table class="table table-dark table-bordered align-middle text-center"><thead><tr><th>Alternatif</th>';
+  ringkasan.header.forEach(h=> html += `<th>${h}</th>`);
+  html += '</tr></thead><tbody>';
+  ringkasan.rows.forEach(r=>{
+    html += `<tr><td class="fw-semibold">${r.label}</td>`;
+    r.values.forEach(v=> html += `<td>${v}</td>`);
+    html += '</tr>';
+  });
+  html += '</tbody></table></div>';
+
+  html += '<div class="mt-3">';
+  ringkasan.ranking.forEach(r=>{
+    const topClass = r.peringkat === 1 ? 'list-group-item d-flex justify-content-between align-items-center bg-dark ranking-item top' :
+                                          'list-group-item d-flex justify-content-between align-items-center bg-dark';
+    html += `<div class="${topClass} mb-1 rounded">
+      <span>#${r.peringkat} ${r.nama}</span>
+      <span class="badge bg-secondary">V = ${r.vi}</span>
+    </div>`;
+  });
+  html += '</div>';
+
+  html += `<div class="alert alert-success mt-3" role="alert">
+    <i class="fa-solid fa-trophy me-2"></i>Alternatif terbaik: <strong>${ringkasan.terbaik}</strong> (nilai preferensi tertinggi)
+  </div>`;
+
+  hasilDiv.innerHTML = html;
+}
+
+// bikin form awal saat halaman dimuat
+buatForm();
+</script>
+</body>
+</html>
